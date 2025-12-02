@@ -2,6 +2,7 @@
 # Implemented by ax Inc. 2025
 
 import os
+import sys
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -32,9 +33,6 @@ export_to_tflite_mask_decoder = args.framework == "tflite" and (args.mode == "ex
 import_from_tflite = args.framework == "tflite" and (args.mode == "import" or args.mode == "both")
 
 tflite_int8 = args.accuracy == "int8"
-
-sam3_checkpoint = "./huggingface/sam3.pt"
-sam3_config = "./huggingface/config.json"
 
 # use cpu for export
 device = torch.device("cpu")
@@ -92,11 +90,19 @@ np.random.seed(3)
 image = Image.open('assets/images/truck.jpg')
 image = np.array(image.convert("RGB"))
 
-sam3_model = build_sam3_image_model(checkpoint_path=sam3_checkpoint, device=device)
+sam3_model = build_sam3_image_model(device=device)
 
-processor = Sam3Processor(sam3_model)
+# TODO: resolution=args.image_size
+processor = Sam3Processor(model=sam3_model, device=device)
 
-processor.set_image(image)
+processor.set_image(
+    image,
+    export_to_onnx=export_to_onnx_image_encoder,
+    export_to_tflite=export_to_tflite_image_encoder,
+    import_from_onnx=import_from_onnx, 
+    import_from_tflite=import_from_tflite,
+    tflite_int8=tflite_int8,
+)
 
 ########################################
 ### sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device, image_size=args.image_size)

@@ -2,6 +2,7 @@
 # Implemented by ax Inc. 2025
 
 import os
+import sys
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -27,11 +28,6 @@ import_from_onnx = args.framework == "onnx" and (args.mode == "import" or args.m
 
 export_to_tflite = args.framework == "tflite" and (args.mode == "export" or args.mode == "both")
 import_from_tflite = args.framework == "tflite" and (args.mode == "import" or args.mode == "both")
-
-tflite_int8 = args.accuracy == "int8"
-
-sam3_checkpoint = "./huggingface/sam3.pt"
-sam3_config = "./huggingface/config.json"
 
 # use cpu for export
 device = torch.device("cpu")
