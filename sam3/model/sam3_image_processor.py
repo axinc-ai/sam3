@@ -4,6 +4,7 @@ from typing import Dict, List
 import numpy as np
 import PIL
 import torch
+import onnxruntime
 
 from sam3.model import box_ops
 
@@ -38,8 +39,30 @@ class Sam3Processor:
             input_points_mask=None,
         )
 
+        # debug
+        self.debug = False
+
+        # onnx
+        self.image_encoder_onnx = None
+        self.prompt_encoder_onnx = None
+        self.mask_decoder_onnx = None
+
+        # tflite
+        self.image_encoder_tflite = None
+        self.prompt_encoder_tflite = None
+        self.mask_decoder_tflite = None
+
     @torch.inference_mode()
-    def set_image(self, image, state=None):
+    def set_image(
+        self,
+        image,
+        state=None,
+        export_to_onnx=False,
+        export_to_tflite=False,
+        import_from_onnx=False,
+        import_from_tflite=False,
+        tflite_int8=False,
+    ):
         """Sets the image on which we want to do predictions."""
         if state is None:
             state = {}
@@ -53,6 +76,29 @@ class Sam3Processor:
 
         image = v2.functional.to_image(image).to(self.device)
         image = self.transform(image).unsqueeze(0)
+
+        if export_to_onnx:
+            torch.onnx.export(
+                self.model,
+                (image),
+                'model/image_encoder.onnx',
+                # input_names=["input_image"],
+                # output_names=[
+                #     "vision_features", "vision_pos_enc_0", "vision_pos_enc_1", "vision_pos_enc_2",
+                #     "backbone_fpn_0", "backbone_fpn_1", "backbone_fpn_2",
+                # ],
+                opset_version=17,
+                verbose=False,
+            )
+
+        if import_from_onnx:
+            raise NotImplementedError
+
+        if export_to_tflite:
+            raise NotImplementedError
+
+        if import_from_tflite:
+            raise NotImplementedError
 
         state["original_height"] = height
         state["original_width"] = width

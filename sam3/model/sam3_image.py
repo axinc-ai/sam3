@@ -13,7 +13,8 @@ from sam3.model.sam1_task_predictor import SAM3InteractiveImagePredictor
 from sam3.model.vl_combiner import SAM3VLBackbone
 from sam3.perflib.nms import nms_masks
 
-from sam3.train.data.collator import BatchedDatapoint
+from sam3.train.data.collator import BatchedDatapoint, collate_fn_api
+from sam3.train.data.sam3_image_dataset import Datapoint
 
 from .act_ckpt_utils import activation_ckpt_wrapper
 
@@ -528,6 +529,10 @@ class Sam3Image(torch.nn.Module):
         return geometric_prompt
 
     def forward(self, input: BatchedDatapoint):
+        if not isinstance(input, BatchedDatapoint):
+            input = collate_fn_api([
+                Datapoint(find_queries=[], images=[input]),
+            ], 'input')['input']
         device = self.device
         backbone_out = {"img_batch_all_stages": input.img_batch}
         backbone_out.update(self.backbone.forward_image(input.img_batch))
