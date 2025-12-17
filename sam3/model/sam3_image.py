@@ -15,6 +15,7 @@ from sam3.perflib.nms import nms_masks
 
 from sam3.train.data.collator import BatchedDatapoint, collate_fn_api
 from sam3.train.data.sam3_image_dataset import (
+    Image,
     Datapoint,
     FindQueryLoaded,
     InferenceMetadata,
@@ -534,12 +535,17 @@ class Sam3Image(torch.nn.Module):
 
     def forward(self, input: BatchedDatapoint):
         if not isinstance(input, BatchedDatapoint):
+            images = [Image(
+                data=image,
+                objects=[],
+                size=(image.shape[1], image.shape[2]),
+            ) for image in input]
             input = collate_fn_api([
                 Datapoint(find_queries=[
                     FindQueryLoaded(
                         query_text='',
                         image_id=0,
-                        object_ids_output=[],
+                        object_ids_output=[0],
                         is_exhaustive=False,
                         inference_metadata=InferenceMetadata(
                             coco_image_id=0,
@@ -550,7 +556,7 @@ class Sam3Image(torch.nn.Module):
                             frame_index=0,
                         ),
                     ),
-                ], images=input),
+                ], images=images),
             ], 'input')['input']
         device = self.device
         backbone_out = {"img_batch_all_stages": input.img_batch}
