@@ -5,6 +5,7 @@ import numpy as np
 import PIL
 import torch
 import onnxruntime
+import warnings
 
 from sam3.model import box_ops
 
@@ -78,18 +79,20 @@ class Sam3Processor:
         image = self.transform(image).unsqueeze(0)
 
         if export_to_onnx:
-            torch.onnx.export(
-                self.model,
-                (image),
-                'model/image_encoder.onnx',
-                # input_names=["input_image"],
-                # output_names=[
-                #     "vision_features", "vision_pos_enc_0", "vision_pos_enc_1", "vision_pos_enc_2",
-                #     "backbone_fpn_0", "backbone_fpn_1", "backbone_fpn_2",
-                # ],
-                opset_version=17,
-                verbose=False,
-            )
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', category=torch.jit.TracerWarning)
+                torch.onnx.export(
+                    self.model,
+                    (image),
+                    'model/image_encoder.onnx',
+                    # input_names=["input_image"],
+                    # output_names=[
+                    #     "vision_features", "vision_pos_enc_0", "vision_pos_enc_1", "vision_pos_enc_2",
+                    #     "backbone_fpn_0", "backbone_fpn_1", "backbone_fpn_2",
+                    # ],
+                    opset_version=17,
+                    verbose=False,
+                )
 
         if import_from_onnx:
             raise NotImplementedError

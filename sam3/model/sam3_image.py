@@ -16,6 +16,7 @@ from sam3.perflib.nms import nms_masks
 from sam3.train.data.collator import BatchedDatapoint, collate_fn_api
 from sam3.train.data.sam3_image_dataset import (
     Image,
+    Object,
     Datapoint,
     FindQueryLoaded,
     InferenceMetadata,
@@ -535,28 +536,43 @@ class Sam3Image(torch.nn.Module):
 
     def forward(self, input: BatchedDatapoint):
         if not isinstance(input, BatchedDatapoint):
-            images = [Image(
-                data=image,
-                objects=[],
-                size=(image.shape[1], image.shape[2]),
-            ) for image in input]
             input = collate_fn_api([
-                Datapoint(find_queries=[
-                    FindQueryLoaded(
-                        query_text='',
-                        image_id=0,
-                        object_ids_output=[0],
-                        is_exhaustive=False,
-                        inference_metadata=InferenceMetadata(
-                            coco_image_id=0,
-                            original_image_id=0,
-                            original_category_id=0,
-                            original_size=(0, 0),
-                            object_id=0,
-                            frame_index=0,
+                Datapoint(
+                    find_queries=[
+                        FindQueryLoaded(
+                            query_text='',
+                            image_id=0,
+                            object_ids_output=[0],
+                            is_exhaustive=True,
+                            inference_metadata=InferenceMetadata(
+                                coco_image_id=0,
+                                original_image_id=0,
+                                original_category_id=0,
+                                original_size=(0, 0),
+                                object_id=0,
+                                frame_index=0,
+                            ),
                         ),
-                    ),
-                ], images=images),
+                    ],
+                    images=[Image(
+                        data=image,
+                        objects=[
+                            Object(
+                                bbox=torch.stack(
+                                    tensors=[
+                                        torch.tensor(0.0),
+                                        torch.tensor(0.0),
+                                        torch.tensor(1.0),
+                                        torch.tensor(1.0),
+                                    ],
+                                    dim=-1,
+                                ),
+                                area=0.0,
+                            ),
+                        ],
+                        size=(image.shape[1], image.shape[2]),
+                    ) for image in input],
+                ),
             ], 'input')['input']
         device = self.device
         backbone_out = {"img_batch_all_stages": input.img_batch}
